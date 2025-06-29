@@ -3,6 +3,20 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import defaultdict
+import argparse
+
+CONFIG = {
+    'insider': {
+        'title': 'insider',
+        'prefix': 'insider_trading',
+        'csv': 'insider_trading_data.csv'
+    },
+    'congress': {
+        'title': 'congress',
+        'prefix': 'congress_trading',
+        'csv': 'congress_trading_data.csv'
+    }
+}
 
 def parse_ticker_data(input_file=None):
     """Parse ticker data from file or stdin and return as a dictionary."""
@@ -65,9 +79,9 @@ def analyze_ticker_data(ticker_data):
         'net_activity_sorted': net_activity_sorted
     }
 
-def print_summary(analysis):
+def print_summary(analysis, cfg):
     """Print a summary of the analysis."""
-    print("\n===== INSIDER TRADING SUMMARY =====")
+    print(f"\n===== {cfg['title']} TRADING SUMMARY =====")
     print(f"Total transactions analyzed: {len(analysis['dataframe'])}")
     print(f"Total sales: {analysis['total_sales']}")
     print(f"Total purchases: {analysis['total_purchases']}")
@@ -96,9 +110,11 @@ def print_summary(analysis):
         market_sentiment = "Bullish" if buy_sell_ratio > 1 else "Bearish"
         print(f"\nMarket Buy/Sell Ratio: {buy_sell_ratio:.2f} ({market_sentiment})")
 
-def generate_visualizations(analysis, output_prefix="insider_trading"):
+def generate_visualizations(analysis, cfg):
     """Generate visualizations of the data."""
     df = analysis['dataframe']
+    output_prefix = cfg['prefix']
+    title = cfg['title']
     
     # 1. Bar chart of top 10 tickers by sales
     plt.figure(figsize=(12, 6))
@@ -126,7 +142,7 @@ def generate_visualizations(analysis, output_prefix="insider_trading"):
     # Create a new column for coloring
     net_activity['color_group'] = ['positive' if x > 0 else 'negative' for x in net_activity['net_activity']]
     sns.barplot(x='ticker', y='net_activity', hue='color_group', data=net_activity, palette={'positive': 'green', 'negative': 'red'}, legend=False)
-    plt.title('Net Insider Activity by Ticker (Purchases - Sales)')
+    plt.title(f'Net {title} Activity by Ticker (Purchases - Sales)')
     plt.xticks(rotation=90)
     plt.axhline(y=0, color='black', linestyle='-', alpha=0.3)
     plt.tight_layout()
@@ -145,24 +161,32 @@ def generate_visualizations(analysis, output_prefix="insider_trading"):
     
     print(f"\nVisualizations saved with prefix: {output_prefix}")
 
-def export_data(analysis, output_file="insider_trading_data.csv"):
+def export_data(analysis, cfg):
     """Export the analyzed data to a CSV file."""
+    output_file = cfg['csv']
     analysis['dataframe'].to_csv(output_file, index=False)
     print(f"\nData exported to {output_file}")
 
 def main():
     """Main function to run the analysis."""
-    if len(sys.argv) > 1:
-        ticker_data = parse_ticker_data(sys.argv[1])
+    p = argparse.ArgumentParser(description='Analyze trading data')
+    p.add_argument('source', choices=CONFIG.keys(), help='Which dataset to analyze')
+    p.add_argument('input_file', nargs='?', help='Input file (reads from stdin if not provided)')
+    args = p.parse_args()
+    
+    cfg = CONFIG[args.source]
+    
+    if args.input_file:
+        ticker_data = parse_ticker_data(args.input_file)
     else:
         ticker_data = parse_ticker_data()
     
     analysis = analyze_ticker_data(ticker_data)
-    print_summary(analysis)
+    print_summary(analysis, cfg)
     
     try:
-        generate_visualizations(analysis)
-        export_data(analysis)
+        generate_visualizations(analysis, cfg)
+        export_data(analysis, cfg)
     except Exception as e:
         print(f"Error generating visualizations or exporting data: {e}")
         print("Summary analysis completed without visualizations.")

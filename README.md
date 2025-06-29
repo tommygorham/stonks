@@ -1,17 +1,26 @@
 # stonks
-Simple CLI Tools to obtain, analyze, visualize, or track data related to stocks 
-## Directory: scripts/qq
-This directory contains web scraping scripts written in Python to obtain stock data
+Simple CLI Tools to obtain, analyze, visualize, or track data related to stocks.
+
+### Description
+Currently, we simply generate visualizations for insider and congressional stock trades, 
+scraped from an excellent website that makes this data available. 
+
 ### Usage
 ```
-python qqscraper.py | python qqanalyzer.py
+./run.sh 
 ```
-or
+### Output
+.png visualizations created from .csv data that was scraped 
 ```
-python qqscraper.py > ticker_data.txt
-python qqanalyzer.py ticker_data.txt
+congress_trading_data.csv
+congress_trading_distribution.png
+congress_trading_net_activity.png
+congress_trading_top_purchases.png
+congress_trading_top_sales.png
+insider_trading_data.csv
+insider_trading_distribution.png
+insider_trading_net_activity.png
+insider_trading_top_purchases.png
+insider_trading_top_sales.png
 ```
-### Files 
-**qqscraper.py** scrapes insider stock activity from https://www.quiverquant.com/insiders/
-
-**qqanalyzer.py** transforms the output from qqscraper.py into  visualizations
+These files are placed in a directory that is created automatically in qq/scripts/date_time
