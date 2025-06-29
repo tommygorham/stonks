@@ -24,3 +24,11 @@ insider_trading_top_purchases.png
 insider_trading_top_sales.png
 ```
 These files are placed in a directory that is created automatically in qq/scripts/date_time
+
+Two examples of .pngs are below. 
+
+### Insider net activity for June 29, 2025  
+![insider](scripts/qq/06-29-2025_07-02-25/insider_trading_net_activity.png)
+
+### Congress top purchases for June 29, 2025  
+![congress](scripts/qq/06-29-2025_07-02-25/congress_trading_top_purchases.png)
