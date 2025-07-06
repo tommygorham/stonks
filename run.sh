@@ -1,8 +1,8 @@
 #!/bin/bash
 cd scripts/qq
 
-# Create a directory to store today's analysis with time
-ANALYSIS_DIR="$(date +"%m-%d-%Y_%H-%M-%S")"
+# Create a directory to store today's analysis with time in data/qq
+ANALYSIS_DIR="../../data/qq/$(date +"%m-%d-%Y_%H-%M-%S")"
 mkdir -p "$ANALYSIS_DIR"
 
 # Run insider trading analysis pipeline
