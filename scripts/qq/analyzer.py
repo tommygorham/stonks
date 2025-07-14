@@ -32,19 +32,47 @@ def parse_ticker_data(input_file=None):
     
     # Process each line
     for line in lines:
-        line = line.strip()
-        if not line or line.startswith("python"):
-            continue
-        parts = line.split()
-        if len(parts) >= 3:
-            ticker = parts[0]
-            sales = int(parts[1])
-            purchases = int(parts[2])
+        try:
+            line = line.strip()
+            if not line or line.startswith("python"):
+                continue
+                
+            # Try to parse the line more intelligently
+            parts = line.split()
+            
+            # Handle case where we have too many parts (likely a hyphenated ticker)
+            if len(parts) > 3:
+                # Find the last two items which should be numbers
+                # Everything before that is the ticker
+                if parts[-1].isdigit() and parts[-2].isdigit():
+                    ticker = ' '.join(parts[:-2])  # Join all parts except last two
+                    sales = int(parts[-2])
+                    purchases = int(parts[-1])
+                else:
+                    # If we can't determine which parts are numbers, skip the line
+                    print(f"Warning: Could not parse line: {line}", file=sys.stderr)
+                    continue
+            elif len(parts) == 3:
+                # Standard case: ticker sales purchases
+                ticker = parts[0]
+                sales = int(parts[1])
+                purchases = int(parts[2])
+            else:
+                # Not enough parts
+                print(f"Warning: Invalid format in line: {line}", file=sys.stderr)
+                continue
+                
             ticker_data.append({
                 'ticker': ticker,
                 'sales': sales,
                 'purchases': purchases
             })
+        except ValueError as e:
+            print(f"Warning: Could not parse numbers in line: {line} - {e}", file=sys.stderr)
+            continue
+        except Exception as e:
+            print(f"Warning: Error processing line: {line} - {e}", file=sys.stderr)
+            continue
     
     return ticker_data
 
