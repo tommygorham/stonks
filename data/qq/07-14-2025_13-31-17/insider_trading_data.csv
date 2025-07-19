@@ -1,0 +1,22 @@
+ticker,sales,purchases,net_activity
+ABNB,1,0,-1
+ACN,13,0,-13
+ANIP,1,0,-1
+ARQT,2,0,-2
+BE,1,0,-1
+BFZ,2,0,-2
+BRBR,1,0,-1
+CARG,2,0,-2
+"GEF, GEF-B",1,0,-1
+GNT,2,0,-2
+GRX,0,2,2
+HLI,1,0,-1
+K,1,0,-1
+KVYO,2,0,-2
+NQP,1,0,-1
+OMCC,0,2,2
+RCG,0,5,5
+TEAM,28,0,-28
+TPL,0,1,1
+TRC,1,0,-1
+WDAY,1,0,-1
