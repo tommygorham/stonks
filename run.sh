@@ -5,6 +5,8 @@ cd scripts
 ANALYSIS_DIR="../data/qq/$(date +"%m-%d-%Y_%H-%M-%S")"
 mkdir -p "$ANALYSIS_DIR"
 
+python zacks.py 
+
 # Run insider trading analysis pipeline
 python scrape.py insider | python analyzer.py insider
 
