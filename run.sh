@@ -1,20 +1,21 @@
 #!/bin/bash
-cd scripts
-
-# Create a directory to store today's analysis with time in data/qq
-ANALYSIS_DIR="../data/qq/$(date +"%m-%d-%Y_%H-%M-%S")"
+cd scripts/
+# Create a directory to store today's analysis in data/
+ANALYSIS_DIR="../data/$(date +"%m-%d-%Y")"
 mkdir -p "$ANALYSIS_DIR"
 
-python zacks.py 
+# Get current time for file naming
+TIMESTAMP=$(date +"%H-%M-%S")
+
+# Update user about zacks new #1 additions
+python zacks.py
 
 # Run insider trading analysis pipeline
 python scrape.py insider | python analyzer.py insider
-
 # Check if insider analysis was successful
 if [ $? -eq 0 ]; then
-  # Move insider files to the analysis directory
-  mv insider_trading*.png "$ANALYSIS_DIR/" 2>/dev/null
-  mv insider_trading_data.csv "$ANALYSIS_DIR/" 2>/dev/null
+  # Move insider files to the analysis directory with timestamp
+  mv insider_trading_data.csv "$ANALYSIS_DIR/insider_trading_data_${TIMESTAMP}.csv" 2>/dev/null
 else
   echo "Error: insider analysis failed."
   exit 1
@@ -22,12 +23,10 @@ fi
 
 # Run congress trading analysis pipeline
 python scrape.py congress | python analyzer.py congress
-
 # Check if congress analysis was successful
 if [ $? -eq 0 ]; then
-  # Move congress files to the analysis directory
-  mv congress_trading*.png "$ANALYSIS_DIR/" 2>/dev/null
-  mv congress_trading_data.csv "$ANALYSIS_DIR/" 2>/dev/null
+  # Move congress files to the analysis directory with timestamp
+  mv congress_trading_data.csv "$ANALYSIS_DIR/congress_trading_data_${TIMESTAMP}.csv" 2>/dev/null
 else
   echo "Error: Congress analysis failed."
   exit 1
