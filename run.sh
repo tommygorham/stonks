@@ -1,11 +1,21 @@
 #!/bin/bash
+
+# Check if virtual environment exists and activate it
+if [ -f "venv/bin/activate" ]; then
+    echo "Activating virtual environment..."
+    source venv/bin/activate
+else
+    echo "Warning: Virtual environment not found. Make sure to run setup.sh first."
+    echo "Continuing with system Python..."
+fi
+
 cd scripts
 
 # Create a directory to store today's analysis with time in data/qq
 ANALYSIS_DIR="../data/qq/$(date +"%m-%d-%Y_%H-%M-%S")"
 mkdir -p "$ANALYSIS_DIR"
 
-python zacks.py 
+python zacks.py
 
 # Run insider trading analysis pipeline
 python scrape.py insider | python analyzer.py insider
