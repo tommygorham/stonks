@@ -186,8 +186,6 @@ def generate_visualizations(analysis, cfg):
     plt.title('Sales vs Purchases Distribution')
     plt.tight_layout()
     plt.savefig(f"{output_prefix}_distribution.png")
-    
-    print(f"\nVisualizations saved with prefix: {output_prefix}")
 
 def export_data(analysis, cfg):
     """Export the analyzed data to a CSV file."""

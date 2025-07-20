@@ -1,17 +1,15 @@
 #!/bin/bash
-cd scripts/qq
+cd scripts
 
 # Create a directory to store today's analysis with time in data/qq
-ANALYSIS_DIR="../../data/qq/$(date +"%m-%d-%Y_%H-%M-%S")"
+ANALYSIS_DIR="../data/qq/$(date +"%m-%d-%Y_%H-%M-%S")"
 mkdir -p "$ANALYSIS_DIR"
 
 # Run insider trading analysis pipeline
-echo "Running insider trading analysis..."
 python scrape.py insider | python analyzer.py insider
 
 # Check if insider analysis was successful
 if [ $? -eq 0 ]; then
-  echo "insider analysis completed successfully!"
   # Move insider files to the analysis directory
   mv insider_trading*.png "$ANALYSIS_DIR/" 2>/dev/null
   mv insider_trading_data.csv "$ANALYSIS_DIR/" 2>/dev/null
@@ -21,12 +19,10 @@ else
 fi
 
 # Run congress trading analysis pipeline
-echo "Running congress trading analysis..."
 python scrape.py congress | python analyzer.py congress
 
 # Check if congress analysis was successful
 if [ $? -eq 0 ]; then
-  echo "Congress analysis completed successfully!"
   # Move congress files to the analysis directory
   mv congress_trading*.png "$ANALYSIS_DIR/" 2>/dev/null
   mv congress_trading_data.csv "$ANALYSIS_DIR/" 2>/dev/null
@@ -37,4 +33,3 @@ fi
 
 # Display a message about the output files
 echo -e "\nGenerated files in $ANALYSIS_DIR:"
-ls -la "$ANALYSIS_DIR/"
