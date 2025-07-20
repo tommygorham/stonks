@@ -84,4 +84,4 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 # Display a message about the output files
-Write-Host "`nGenerated files in $ANALYSIS_DIR:" -ForegroundColor Green
+Write-Host "`nGenerated files in $ANALYSIS_DIR\:" -ForegroundColor Green
