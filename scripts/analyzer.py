@@ -16,6 +16,34 @@ CONFIG = {
     }
 }
 
+def make_yahoo_finance_links(tickers):
+    """
+    Convert a list of ticker symbols into clickable terminal links to Yahoo Finance.
+    
+    Args:
+        tickers: List of ticker symbols (strings)
+        
+    Returns:
+        List of formatted strings with clickable links for terminals that support 
+        OSC 8 hyperlink escape sequences.
+    """
+    clickable_tickers = []
+    
+    for ticker in tickers:
+        # Clean the ticker symbol (remove any whitespace)
+        clean_ticker = ticker.strip()
+        
+        # Yahoo Finance URL format
+        url = f"https://finance.yahoo.com/quote/{clean_ticker}"
+        
+        # OSC 8 escape sequence format for terminal hyperlinks
+        # Format: \033]8;;URL\033\\TEXT\033]8;;\033\\
+        clickable = f"\033]8;;{url}\033\\{clean_ticker}\033]8;;\033\\"
+        
+        clickable_tickers.append(clickable)
+    
+    return clickable_tickers
+
 def parse_ticker_data(input_file=None):
     """Parse ticker data from file or stdin and return as a dictionary."""
     ticker_data = []
@@ -93,11 +121,20 @@ def analyze_ticker_data(ticker_data):
     }
 
 def print_summary(analysis, cfg):
-    """Print a summary of the analysis."""
-    # Top 5 by purchases
+    """Print a summary of the analysis with clickable Yahoo Finance links."""
     print(f"--- Top 5 {cfg['title'].capitalize()} Purchases ---")
+    
+    # Get top 5 tickers
+    top_tickers = []
     for _, row in analysis['purchases_sorted'].iloc[:5].iterrows():
-        print(row['ticker'])
+        top_tickers.append(row['ticker'])
+    
+    # Convert to clickable links
+    clickable_tickers = make_yahoo_finance_links(top_tickers)
+    
+    # Print each clickable ticker
+    for ticker in clickable_tickers:
+        print(ticker)
 
 def export_data(analysis, cfg):
     """Export the analyzed data to a CSV file."""
