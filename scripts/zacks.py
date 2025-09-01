@@ -4,6 +4,29 @@ import sys
 from datetime import datetime
 from typing import List, Optional
 
+def make_yahoo_finance_link(ticker: str) -> str:
+    """
+    Convert a ticker symbol into a clickable terminal link to Yahoo Finance.
+    
+    Args:
+        ticker: Ticker symbol (string)
+        
+    Returns:
+        Formatted string with clickable link for terminals that support 
+        OSC 8 hyperlink escape sequences.
+    """
+    # Clean the ticker symbol (remove any whitespace)
+    clean_ticker = ticker.strip()
+    
+    # Yahoo Finance URL format
+    url = f"https://finance.yahoo.com/quote/{clean_ticker}"
+    
+    # OSC 8 escape sequence format for terminal hyperlinks
+    # Format: \033]8;;URL\033\\TEXT\033]8;;\033\\
+    clickable = f"\033]8;;{url}\033\\{clean_ticker}\033]8;;\033\\"
+    
+    return clickable
+
 def fetch_page_content(url: str) -> Optional[str]:
     # Using a User-Agent header is crucial to mimic a browser and avoid being blocked
     headers = {
@@ -43,10 +66,11 @@ if __name__ == "__main__":
             # Get current date and format as MM-DD-YYYY
             current_date = datetime.now().strftime("%m-%d-%Y")
             print(f"\n--- Zacks #1 Rank Additions ({current_date}) ---")
-            # Sort tickers alphabetically and print each on a new line
+            # Sort tickers alphabetically and convert to clickable links
             sorted_tickers = sorted(extracted_tickers)
             for ticker in sorted_tickers:
-                print(ticker)
+                clickable_ticker = make_yahoo_finance_link(ticker)
+                print(clickable_ticker)
         else:
             print("\nCould not find any tickers in the specified section.")
     else:
