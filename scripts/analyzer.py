@@ -2,6 +2,7 @@ import sys
 import pandas as pd
 from collections import defaultdict
 import argparse
+from datetime import datetime
 
 CONFIG = {
     'insider': {
@@ -122,7 +123,9 @@ def analyze_ticker_data(ticker_data):
 
 def print_summary(analysis, cfg):
     """Print a summary of the analysis with clickable Yahoo Finance links."""
-    print(f"--- Top 5 {cfg['title'].capitalize()} Purchases ---")
+    # Get current date and format as MM-DD-YYYY
+    current_date = datetime.now().strftime("%m-%d-%Y")
+    print(f"--- Top 5 {cfg['title'].capitalize()} Purchases ({current_date}) ---")
     
     # Get top 5 tickers
     top_tickers = []
