@@ -32,5 +32,16 @@ else
   exit 1
 fi
 
+# Run congress purchases only analysis
+python congress_df.py -P -p -r -o congress_purchases_only_${TIMESTAMP}.csv
+# Check if congress purchases analysis was successful
+if [ $? -eq 0 ]; then
+  # Move congress purchases file to the analysis directory
+  mv congress_purchases_only_${TIMESTAMP}.csv "$ANALYSIS_DIR/" 2>/dev/null
+else
+  echo "Error: Congress purchases analysis failed."
+  exit 1
+fi
+
 # Display a message about the output files
 echo -e "\nGenerated files in $ANALYSIS_DIR:"
