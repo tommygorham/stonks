@@ -57,14 +57,63 @@ def extract_zacks_tickers(html_content: str) -> List[str]:
             tickers.append(rel_value[0])
     return tickers
 
+def extract_top_movers(html_content: str) -> List[str]:
+    """
+    Extract the 5 tickers from the Zacks #1 Rank Top Movers table.
+    
+    Args:
+        html_content: HTML content of the page
+        
+    Returns:
+        List of ticker symbols from the top movers table
+    """
+    soup = bs4.BeautifulSoup(html_content, "html.parser")
+    tickers = []
+    
+    # Find the top movers section
+    top_movers_section = soup.find("section", id="zacks_rank_top_movers")
+    if not top_movers_section:
+        print("Could not find the 'zacks_rank_top_movers' section.", file=sys.stderr)
+        return []
+    
+    # Find the visible tab (usually the first one - "Value")
+    # Look for the div with id="topmovers_value" which is the default visible tab
+    value_tab = top_movers_section.find("div", id="topmovers_value")
+    if not value_tab:
+        # If not found, try to find any visible tab (one without display:none)
+        tabs = top_movers_section.find_all("div", class_="ui-tabs-panel")
+        for tab in tabs:
+            style = tab.get("style", "")
+            if "display: none" not in style:
+                value_tab = tab
+                break
+    
+    if not value_tab:
+        print("Could not find visible tab in top movers section.", file=sys.stderr)
+        return []
+    
+    # Find all ticker links in the table
+    ticker_links = value_tab.select("a.hoverquote-container-od[rel]")
+    for link in ticker_links[:5]:  # Get only the first 5
+        rel_value = link.get("rel")
+        if rel_value:
+            if isinstance(rel_value, list):
+                tickers.append(rel_value[0])
+            else:
+                tickers.append(rel_value)
+    
+    return tickers
+
 if __name__ == "__main__":
     ZACKS_URL = "https://www.zacks.com/"
     html_content = fetch_page_content(ZACKS_URL)
     if html_content:
+        # Get current date and format as MM-DD-YYYY
+        current_date = datetime.now().strftime("%m-%d-%Y")
+        
+        # Extract and display #1 Rank Additions
         extracted_tickers = extract_zacks_tickers(html_content)
         if extracted_tickers:
-            # Get current date and format as MM-DD-YYYY
-            current_date = datetime.now().strftime("%m-%d-%Y")
             print(f"\n--- Zacks #1 Rank Additions ({current_date}) ---")
             # Sort tickers alphabetically and convert to clickable links
             sorted_tickers = sorted(extracted_tickers)
@@ -72,6 +121,18 @@ if __name__ == "__main__":
                 clickable_ticker = make_yahoo_finance_link(ticker)
                 print(clickable_ticker)
         else:
-            print("\nCould not find any tickers in the specified section.")
+            print("\nCould not find any tickers in the additions section.")
+        
+        # Extract and display Top Movers
+        top_movers_tickers = extract_top_movers(html_content)
+        if top_movers_tickers:
+            print(f"--- Zacks #1 Rank Top Movers ({current_date}) ---")
+            # Sort tickers alphabetically and convert to clickable links
+            sorted_movers = sorted(top_movers_tickers)
+            for ticker in sorted_movers:
+                clickable_ticker = make_yahoo_finance_link(ticker)
+                print(clickable_ticker)
+        else:
+            print("\nCould not find any tickers in the top movers section.")
     else:
         print("\nFailed to retrieve webpage. Cannot extract tickers.")
