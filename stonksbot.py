@@ -151,7 +151,7 @@ async def stonks(ctx: discord.Interaction):
                     sections.append('\n'.join(current_section))
                 current_section = [line]
                 capture = True
-            elif '--- Top 5' in line and 'Purchases' in line:
+            elif '--- Recent' in line and 'Purchases' in line:
                 if current_section:
                     sections.append('\n'.join(current_section))
                 current_section = [line]
@@ -225,7 +225,6 @@ async def stonks(ctx: discord.Interaction):
         await ctx.followup.send("Could not find `run.sh`. Make sure the bot is in the correct directory.")
     except Exception as e:
         await ctx.followup.send(f"An error occurred: {str(e)[:1000]}")
-
 @bot.tree.command(name="quickstonks", description="Get quick trading picks without files")
 @app_commands.guilds(GUILD_ID)
 async def quickstonks(ctx: discord.Interaction):
@@ -254,24 +253,47 @@ async def quickstonks(ctx: discord.Interaction):
                 cwd=os.path.dirname(os.path.abspath(__file__))
             )
             
-            stdout, _ = await asyncio.wait_for(process.communicate(), timeout=10.0)
+            try:
+                stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=15.0)
+            except asyncio.TimeoutError:
+                print(f"Command timed out: {cmd}")
+                continue
+                
             output = stdout.decode('utf-8') if stdout else ""
+            error = stderr.decode('utf-8') if stderr else ""
+            
+            # Debug output for troubleshooting
+            if error:
+                print(f"Error in command '{cmd}': {error}")
             
             # Parse output for the section header and tickers
             lines = output.strip().split('\n')
             for i, line in enumerate(lines):
-                if '---' in line and ('Zacks' in line or 'Top 5' in line):
+                # Look for section headers - be more inclusive in matching
+                if '---' in line and any(keyword in line for keyword in ['Zacks', 'Top 5', 'Congress', 'Insider']):
                     title = line.replace('---', '').strip()
                     # Get the next few lines as tickers
                     tickers = []
                     for j in range(i+1, min(i+6, len(lines))):
                         if lines[j].strip() and not lines[j].startswith('---'):
-                            # Clean ANSI codes
+                            # Clean ANSI codes - fixed regex patterns
                             import re
-                            clean = re.sub(r'\033\[[^m]*m|\033\]8;[^\\]*\\|\\033\\', '', lines[j])
-                            clean = re.sub(r'\033\]8;;.*?\033\\(.*?)\033\]8;;\033\\', r'\1', clean)
-                            if clean.strip():
-                                ticker = clean.strip()
+                            ticker_line = lines[j]
+                            
+                            # First try to extract from OSC 8 hyperlinks (terminal clickable links)
+                            if '\033]8;;' in ticker_line:
+                                # Extract text between the OSC 8 markers
+                                match = re.search(r'\033\]8;;[^\033]*\033\\([^\033]+)\033\]8;;\033\\', ticker_line)
+                                if match:
+                                    ticker = match.group(1).strip()
+                                else:
+                                    # Fallback: just remove all ANSI codes
+                                    ticker = re.sub(r'\033\[[^m]*m|\033\][^\\]*\\', '', ticker_line).strip()
+                            else:
+                                # Remove any ANSI color codes
+                                ticker = re.sub(r'\033\[[^m]*m', '', ticker_line).strip()
+                            
+                            if ticker:
                                 # Create clickable link to Yahoo Finance
                                 tickers.append(f"[{ticker}](https://finance.yahoo.com/quote/{ticker})")
                     
@@ -282,7 +304,12 @@ async def quickstonks(ctx: discord.Interaction):
                             inline=False
                         )
         
-        embed.set_footer(text="Quick analysis - run /stonks for full data with files")
+        if not embed.fields:
+            embed.description = "No trading data found. The scripts may have encountered an issue."
+            embed.set_footer(text="Check that all required scripts are present and working")
+        else:
+            embed.set_footer(text="Quick analysis - run /stonks for full data with files")
+            
         await ctx.followup.send(embed=embed)
         
     except Exception as e:
