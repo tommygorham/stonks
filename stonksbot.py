@@ -152,7 +152,7 @@ async def quickstonks(ctx: discord.Interaction):
             lines = output.strip().split('\n')
             for i, line in enumerate(lines):
                 # Look for section headers - be more inclusive in matching
-                if '---' in line and any(keyword in line for keyword in ['Zacks', 'Top 5', 'Congress', 'Insider']):
+                if '---' in line and any(keyword in line for keyword in ['Zacks', 'Recent', 'Congress', 'Insider']):
                     title = line.replace('---', '').strip()
                     # Get the next few lines as tickers
                     tickers = []

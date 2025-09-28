@@ -3,6 +3,8 @@ import pandas as pd
 from collections import defaultdict
 import argparse
 from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
 
 CONFIG = {
     'insider': {
@@ -44,6 +46,141 @@ def make_yahoo_finance_links(tickers):
         clickable_tickers.append(clickable)
     
     return clickable_tickers
+
+def make_yahoo_finance_link(ticker):
+    """
+    Convert a single ticker symbol into a clickable terminal link to Yahoo Finance.
+    """
+    clean_ticker = ticker.strip()
+    url = f"https://finance.yahoo.com/quote/{clean_ticker}"
+    return f"\033]8;;{url}\033\\{clean_ticker}\033]8;;\033\\"
+
+def fetch_table(url, selector):
+    """Fetch HTML table from URL"""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    }
+    try:
+        resp = requests.get(url, headers=headers)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        return soup.select_one(selector)
+    except Exception as e:
+        print(f"Error fetching table: {e}", file=sys.stderr)
+        return None
+
+def extract_congress_data(table):
+    """
+    Extract data from congress trading table into structured format.
+    
+    Returns:
+        List of dictionaries containing transaction data
+    """
+    data = []
+    
+    if not table:
+        return data
+        
+    tbody = table.find('tbody')
+    if not tbody:
+        return data
+    
+    for row in tbody.find_all('tr'):
+        try:
+            cells = row.find_all('td', recursive=False)
+            if len(cells) < 5:  # Ensure we have enough cells
+                continue
+                
+            # Extract ticker
+            ticker_span = (cells[0].find('span', class_='positive') or 
+                          cells[0].find('span', class_='negative') or 
+                          cells[0].find('span'))
+            ticker = ticker_span.get_text(strip=True) if ticker_span else None
+            if ticker == '-' or not ticker:
+                continue
+                
+            # Extract transaction type
+            transaction_span = cells[1].find('span')
+            transaction = transaction_span.get_text(strip=True) if transaction_span else None
+            
+            # Extract politician name
+            politician = cells[2].get_text(strip=True)
+            
+            # Extract filing date
+            filed_date = cells[3].get_text(strip=True)
+            
+            # Extract trade date
+            trade_date = cells[4].get_text(strip=True)
+            
+            # Create data entry
+            entry = {
+                'Stock': ticker,
+                'Transaction': transaction,
+                'Politician': politician,
+                'Filed': filed_date,
+                'Traded': trade_date
+            }
+            
+            data.append(entry)
+            
+        except Exception as e:
+            print(f"Error parsing row: {e}", file=sys.stderr)
+            continue
+            
+    return data
+
+def get_recent_congress_purchases():
+    """
+    Fetch recent congress purchases and return formatted data
+    
+    Returns:
+        List of formatted strings for recent congress purchases
+    """
+    url = 'https://www.quiverquant.com/congresstrading/'
+    selector = 'table.table-congress.table-politician'
+    
+    table = fetch_table(url, selector)
+    data = extract_congress_data(table)
+    
+    if not data:
+        return []
+    
+    # Convert to DataFrame for easier processing
+    df = pd.DataFrame(data)
+    
+    # Convert dates to datetime if needed
+    try:
+        df['Traded'] = pd.to_datetime(df['Traded'], errors='coerce')
+    except:
+        pass
+    
+    # Filter for purchases only
+    df = df[df['Transaction'].str.contains('Purchase', case=False, na=False)]
+    
+    # Sort by most recent trades first
+    if not df.empty:
+        df = df.sort_values(by='Traded', ascending=False)
+    
+    # Get top 5 recent purchases
+    recent_purchases = []
+    for _, row in df.head(5).iterrows():
+        # Format the date nicely
+        try:
+            if pd.notna(row['Traded']):
+                formatted_date = row['Traded'].strftime('%Y-%m-%d')
+            else:
+                formatted_date = str(row['Traded'])
+        except:
+            formatted_date = str(row['Traded'])
+        
+        # Create clickable ticker link
+        clickable_ticker = make_yahoo_finance_link(row['Stock'])
+        
+        # Format the line
+        formatted_line = f"{clickable_ticker}    {row['Transaction']}    {row['Politician']} {formatted_date}"
+        recent_purchases.append(formatted_line)
+    
+    return recent_purchases
 
 def parse_ticker_data(input_file=None):
     """Parse ticker data from file or stdin and return as a dictionary."""
@@ -125,19 +262,28 @@ def print_summary(analysis, cfg):
     """Print a summary of the analysis with clickable Yahoo Finance links."""
     # Get current date and format as MM-DD-YYYY
     current_date = datetime.now().strftime("%m-%d-%Y")
-    print(f"--- Top 5 {cfg['title'].capitalize()} Purchases ({current_date}) ---")
     
-    # Get top 5 tickers
-    top_tickers = []
-    for _, row in analysis['purchases_sorted'].iloc[:5].iterrows():
-        top_tickers.append(row['ticker'])
-    
-    # Convert to clickable links
-    clickable_tickers = make_yahoo_finance_links(top_tickers)
-    
-    # Print each clickable ticker
-    for ticker in clickable_tickers:
-        print(ticker)
+    if cfg['title'] == 'congress':
+        # For congress, show recent detailed purchases
+        print(f"--- Recent {cfg['title'].capitalize()} Purchases ({current_date}) ---")
+        recent_purchases = get_recent_congress_purchases()
+        for purchase in recent_purchases:
+            print(purchase)
+    else:
+        # For insider, show top 5 tickers as before but with "Recent" in title
+        print(f"--- Recent {cfg['title'].capitalize()} Purchases ({current_date}) ---")
+        
+        # Get top 5 tickers
+        top_tickers = []
+        for _, row in analysis['purchases_sorted'].iloc[:5].iterrows():
+            top_tickers.append(row['ticker'])
+        
+        # Convert to clickable links
+        clickable_tickers = make_yahoo_finance_links(top_tickers)
+        
+        # Print each clickable ticker
+        for ticker in clickable_tickers:
+            print(ticker)
 
 def export_data(analysis, cfg):
     """Export the analyzed data to a CSV file."""
@@ -164,8 +310,8 @@ def main():
     try:
         export_data(analysis, cfg)
     except Exception as e:
-        print(f"Error exporting data: {e}")
-        print("Summary analysis completed without data export.")
+        print(f"Error exporting data: {e}", file=sys.stderr)
+        print("Summary analysis completed without data export.", file=sys.stderr)
 
 if __name__ == "__main__":
     main()
