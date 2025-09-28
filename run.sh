@@ -32,8 +32,8 @@ else
   exit 1
 fi
 
-# Run congress purchases only analysis
-python congress_df.py -P -p -r -o congress_purchases_only_${TIMESTAMP}.csv
+# Run congress purchases only analysis (silenced output, just create CSV)
+python congress_df.py -P -p -r -o congress_purchases_only_${TIMESTAMP}.csv >/dev/null 2>&1
 # Check if congress purchases analysis was successful
 if [ $? -eq 0 ]; then
   # Move congress purchases file to the analysis directory
